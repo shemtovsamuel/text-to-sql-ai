@@ -1,0 +1,3 @@
+supabase
+python-dotenv
+langchain_openai
