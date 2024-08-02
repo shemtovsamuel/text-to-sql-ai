@@ -8,20 +8,7 @@ load_dotenv()
 
 OPENAI_KEY = os.getenv('OPENAI_KEY')
 MODEL = "gpt-4o"
-
-model = ChatOpenAI(openai_api_key=OPENAI_KEY, model=MODEL, temperature=0.5)
-
-prompt = ChatPromptTemplate.from_template("""
-Act as an SQL and plotly expert.
-I need you to translate this request into SQL for a PostgreSQL database.
-Don't assume any additional information on the structure of the db.
-If the request is impossible to satisfy, write a clear error message for the user.
-If the request is not precise enough, ask me a refinement question and I will give you details.
-I am not a developer and I don't know anything about SQL or the structure of the database.
-If I don't ask you to select specific columns of a table select them all.
-The database is PostgreSQL.
-Here is the description of the relevant table:
-
+DESCRIPTION_TABLES = """
 Table name: address
 Columns:
 - id (uuid): Unique identifier of the address, primary key
@@ -366,7 +353,7 @@ Columns:
 - id (int8): Unique identifier of the tier, primary key
 - name (text): Name of the tier, default value NULL
 - description (text): Description of the tier, default value NULL
-- features (jsonb): Features of the tier, default value '{}'::jsonb
+- features (jsonb): Features of the tier, default value '[]'::jsonb
 - created_at (timestamptz): Date and time when the record was created, default value now()
 - updated_at (timestamptz): Date and time when the record was last updated, default value NULL
 
@@ -393,19 +380,40 @@ Columns:
 - user_id (uuid): ID of the user, default value NULL
 - role_id (uuid): ID of the role, default value NULL
 - created_at (timestamptz): Date and time when the record was created, default value now()
-- updated_at (timestamptz): Date and time when the record was last updated, default value NULL
+- updated_at (timestamptz): Date and time when the record was last updated, default value NULL"""
+REQUEST = "Donne moi la liste des adresses de la base de données"
+
+model = ChatOpenAI(openai_api_key=OPENAI_KEY, model=MODEL, temperature=0.5)
+
+prompt = ChatPromptTemplate.from_template("""
+Act as an SQL and plotly expert.
+I need you to translate this request into SQL for a PostgreSQL database so that I can plot it with plotly..
+I want to plot the data, make sure the SQL query returns two columns, the first one is the X axis and the second one is the Y axis.
+Choose the best plot type for my data and insert it in "plot_type".
+Don't assume any additional information on the structure of the db.
+If the request is impossible to satisfy, write a clear error message for the user.
+If the request is not precise enough, ask me a refinement question and I will give you details.
+I am not a developer and I don't know anything about SQL or the structure of the database.
+If I don't ask you to select specific columns of a table select them all.
+The database is PostgreSQL.
+Here is the description of the tables :
+
+{description_tables}
 
 Generate the SQL query that matches this request: "{request}"
-The goal is to be able to execute SQL scripts to interact with the database.
-Do not include any explanations, only provide a RFC8259 compliant JSON response following one of these 2 formats without deviation.
-{{"query": <insert query>, "columns": [<list of columns names returned>]}}
+
+Do not include any explanations, only provide a RFC8259 compliant JSON response following one of these 3 formats without deviation.
+{{ "need_more_tables": [write the names of the tables and i will provide their full description] }}
 OR
-{{"error": <insert error>}}
+{{"query": <insert query>, "plot_type": <can be hist/line/bar/pie>, "x_legend": <>, "y_legend": <>, "plot_title": <>}}
+OR
+{{ "error": <insert error if any>, "refine": <insert refinment question if any >" }}
 """)
 
 output_parser = StrOutputParser()
 
 chain = prompt | model | output_parser
 
-result = chain.invoke({"request": "Donne moi le nom du client qui a pour prénom Mamane"})
+result = chain.invoke({"request": REQUEST, "description_tables": DESCRIPTION_TABLES})
 print(result)
+

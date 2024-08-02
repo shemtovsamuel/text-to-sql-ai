@@ -3,8 +3,6 @@ import json
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
-
-
 load_dotenv()
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
@@ -12,11 +10,5 @@ OPENAI_KEY = os.getenv('OPENAI_KEY')
 AUTHORIZED_TABLES_NAMES_STR = os.getenv('AUTHORIZED_TABLES_NAMES')
 AUTHORIZED_TABLES_NAMES = AUTHORIZED_TABLES_NAMES_STR.split(",")
 
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-
-# supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# response = supabase.table("product_categories").select("*").execute()
-# print(json.dumps(response.data, indent=4))
-
-print(AUTHORIZED_TABLES_NAMES)
