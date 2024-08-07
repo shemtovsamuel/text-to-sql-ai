@@ -15,27 +15,46 @@ def call_api(request, is_list, organization_id):
     response = requests.post(API_URL, json=payload)
     return response.json()
 
-# Titre de l'application
-st.title("Convertisseur de Question en SQL")
+# Fonction pour vérifier le mot de passe
+def check_password():
+    def password_entered():
+        if st.session_state["password"] == "richard":
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]
+        else:
+            st.session_state["password_correct"] = False
 
-# Input pour la question
-question = st.text_input("Entrez votre question :")
-
-# Input pour l'organization_id
-organization_id = st.text_input("Entrez l'ID de l'organisation :")
-
-# Checkbox pour isList
-is_list = st.checkbox("Afficher sous forme de liste")
-
-# Bouton pour lancer la requête
-if st.button("Convertir"):
-    if question and organization_id:
-        # Appel de l'API
-        result = call_api(question, is_list, organization_id)
-
-        # Affichage du résultat
-        st.subheader("Résultat :")
-        st.json(result)
+    if "password_correct" not in st.session_state:
+        st.text_input("Entrez le mot de passe", type="password", on_change=password_entered, key="password")
+        return False
+    elif not st.session_state["password_correct"]:
+        st.text_input("Entrez le mot de passe", type="password", on_change=password_entered, key="password")
+        st.error("Mot de passe incorrect")
+        return False
     else:
-        st.warning("Veuillez entrer une question et un ID d'organisation.")
+        return True
 
+if check_password():
+    # Titre de l'application
+    st.title("Convertisseur de Question en SQL")
+
+    # Input pour la question
+    question = st.text_input("Entrez votre question :")
+
+    # Input pour l'organization_id
+    organization_id = st.text_input("Entrez l'ID de l'organisation :")
+
+    # Checkbox pour isList, par défaut à True
+    is_list = st.checkbox("Afficher sous forme de liste", value=True)
+
+    # Bouton pour lancer la requête
+    if st.button("Convertir"):
+        if question and organization_id:
+            # Appel de l'API
+            result = call_api(question, is_list, organization_id)
+
+            # Affichage du résultat
+            st.subheader("Résultat :")
+            st.json(result)
+        else:
+            st.warning("Veuillez entrer une question et un ID d'organisation.")

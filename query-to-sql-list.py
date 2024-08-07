@@ -415,5 +415,5 @@ print(result)
 
 #Donne moi le nom du client qui a pour prénom Mamane
 #Donne moi uniquement les textes des cinq notes les plus récentes dans la base de données
-#donne moi le nombre de payement qui ne sont pas encore effectués dans la base de données
-#donne moi la liste des noms des différentes catégories de produits
+#Donne moi le nombre de payement qui ne sont pas encore effectués dans la base de données
+#Donne moi la liste des noms des différentes catégories de produits
