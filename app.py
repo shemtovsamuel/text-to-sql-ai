@@ -3,30 +3,17 @@ import requests
 import json
 import os
 from dotenv import load_dotenv
+import pg8000
+from urllib.parse import urlparse
+import pandas as pd
+
 load_dotenv()
 
-# URL de l'API
-API_URL = "https://europe-west2-ai-connection-alpha-crm.cloudfunctions.net/convert_question_to_sql"
 
-# Fonction pour obtenir le mot de passe
-def get_password():
-    try:
-        # Essayer d'obtenir le mot de passe depuis les secrets Streamlit
-        return st.secrets["PASSWORD"]
-    except FileNotFoundError:
-        # Si le fichier secrets.toml n'est pas trouvé, utiliser une variable d'environnement
-        return os.environ.get("PASSWORD")
+API_URL = st.secrets["QUESTION_TO_SQL_API_URL"]
+URL_DB = st.secrets["URL_DB"]
+PASSWORD = st.secrets["PASSWORD"]
 
-# Obtenir le mot de passe
-try:
-    PASSWORD = get_password()
-except:
-    st.error("Erreur: Le mot de passe n'a pas pu être récupéré. Assurez-vous d'avoir configuré correctement vos secrets ou variables d'environnement.")
-    st.stop()
-
-# Le reste du code reste inchangé...
-
-# Fonction pour faire l'appel API
 def call_api(request, is_list, organization_id):
     payload = {
         "request": request,
@@ -36,7 +23,6 @@ def call_api(request, is_list, organization_id):
     response = requests.post(API_URL, json=payload)
     return response.json()
 
-# Fonction pour vérifier le mot de passe
 def check_password():
     def password_entered():
         if st.session_state["password"] == PASSWORD:
@@ -56,26 +42,37 @@ def check_password():
         return True
 
 if check_password():
-    # Titre de l'application
     st.title("Convertisseur de Question en SQL")
-
-    # Input pour la question
     question = st.text_input("Entrez votre question :")
-
-    # Input pour l'organization_id
     organization_id = st.text_input("Entrez l'ID de l'organisation :")
-
-    # Checkbox pour isList, par défaut à True
     is_list = st.checkbox("Afficher sous forme de liste", value=True)
 
-    # Bouton pour lancer la requête
     if st.button("Convertir"):
         if question and organization_id:
-            # Appel de l'API
             result = call_api(question, is_list, organization_id)
 
-            # Affichage du résultat
             st.subheader("Résultat :")
             st.json(result)
+
+            url = urlparse(URL_DB)
+
+            conn = pg8000.connect(
+                host=url.hostname,
+                database=url.path[1:],
+                user=url.username,
+                password=url.password,
+                port=url.port
+            )
+
+            cursor = conn.cursor()
+            cursor.execute(result["query"])
+            results = cursor.fetchall()
+            columns = [column[0] for column in cursor.description]
+
+            st.subheader("Execution de la requête SQL :")
+            df = pd.DataFrame(results, columns=columns)
+            st.table(df)
+
+            conn.close()
         else:
             st.warning("Veuillez entrer une question et un ID d'organisation.")
