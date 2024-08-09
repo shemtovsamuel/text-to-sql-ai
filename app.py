@@ -1,11 +1,10 @@
 import streamlit as st
 import requests
-import json
-import os
 from dotenv import load_dotenv
 import pg8000
 from urllib.parse import urlparse
 import pandas as pd
+import plotly.graph_objects as go
 
 load_dotenv()
 
@@ -69,9 +68,20 @@ if check_password():
             results = cursor.fetchall()
             columns = [column[0] for column in cursor.description]
 
-            st.subheader("Execution de la requête SQL :")
-            df = pd.DataFrame(results, columns=columns)
-            st.table(df)
+            if is_list:
+                st.subheader("Résultats de la requête SQL :")
+                df = pd.DataFrame(results, columns=columns)
+                st.table(df)
+            else:
+                st.subheader("Résultats de la requête SQL :")
+                df = pd.DataFrame(results, columns=columns)
+
+                # Afficher le graphique Plotly
+                fig = go.Figure()
+                for col in df.columns:
+                    fig.add_trace(go.Bar(x=df.index, y=df[col]))
+                fig.update_layout(barmode='group')
+                st.plotly_chart(fig)
 
             conn.close()
         else:
